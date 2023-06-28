@@ -5,20 +5,31 @@ const generate = require('@babel/generator').default;
 const vm = require('vm');
 
 function findDecoderArrayId(AST) {
-    let decoder_id
-    traverse(AST, {
-        AssignmentExpression(path) {
-            const {node, scope} = path
-            if (!t.isArrayExpression(node.right)) return
-            if (node.right.elements.length !== 1) return
-            if (!t.isNumericLiteral(node.right.elements[0])) return
-            if (node.right.elements[0].value > 2000) return
-            path.stop()
-            decoder_id = node.left.name
+  var candidates = {};
+
+  traverse(AST, {
+    BlockStatement(path) {
+      for (var node of path.node.body) {
+        if (node?.expression?.callee?.property?.name !== "push") continue;
+        if (node.expression?.arguments?.length !== 1) continue;
+        if (!node.expression?.callee?.object?.name) continue;
+        if (!t.isNumericLiteral(node.expression.arguments[0])) {
+          if (candidates[node.expression.callee.object.name])
+            delete candidates[node.expression.callee.object.name];
+          continue;
         }
-    })
-    return decoder_id
+
+        if (candidates[node.expression.callee.object.name])
+          candidates[node.expression.callee.object.name]++;
+        else candidates[node.expression.callee.object.name] = 1;
+      }
+    },
+  });
+
+  const count = Math.max(...Object.values(candidates));
+  return Object.keys(candidates).find((key) => candidates[key] == count);
 }
+
 
 function removeStringConcealing(AST_original, ctx, decoder_object, decoder_arr_id) {
 
