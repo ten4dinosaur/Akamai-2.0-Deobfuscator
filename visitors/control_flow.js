@@ -32,7 +32,7 @@ function prepareControlFlowUnflattening(AST) {
             const {node, scope} = path
             if (t.isIdentifier(node.callee)) {
                 if (!funcs.includes(node.callee.name)) return
-                if (node.arguments[0].value) entries[node.callee.name].push(node.arguments[0].value)
+                if (node.arguments[0].value || typeof node.arguments[0].value === 'number') entries[node.callee.name].push(node.arguments[0].value)
             }
             else if (t.isMemberExpression(node.callee)) {
                 if (!funcs.includes(node.callee.object.name)) return
